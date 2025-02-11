@@ -123,14 +123,21 @@ jobs:
             #      echo "${{ steps.job-summary.outputs.job-summary }}" >> ./dist/index.html
             #      echo "</body></html>" >> ./dist/index.html
             # Deploy
+            - name: Verify dist directory
+              run: |
+                mkdir -p dist
+                ls -la dist
+                
             - name: Setup Pages
               uses: actions/configure-pages@v3
               if: ${{ !cancelled() }}
+              
             - name: Upload artifact
               uses: actions/upload-pages-artifact@v3
               if: ${{ !cancelled() }}
               with:
-                  path: './dist'
+                  path: 'dist'
+                  
             - name: Deploy to GitHub Pages
               id: deployment
               uses: actions/deploy-pages@v2
