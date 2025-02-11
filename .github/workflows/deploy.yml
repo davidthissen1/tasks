@@ -23,16 +23,19 @@ concurrency:
 
 jobs:
     deploy:
+        environment:
+            name: github-pages
+            url: ${{ steps.deployment.outputs.page_url }}
         runs-on: ubuntu-latest
         steps:
             - name: Checkout
               uses: actions/checkout@v4
               with:
                   fetch-depth: 0
-            - name: Use Node.js ${{ matrix.node-version }}
-              uses: actions/setup-node@v3
+            - uses: actions/setup-node@v3
               with:
-                  node-version: ${{ matrix.node-version }}
+                  node-version: '18'
+                  cache: 'npm'
             - id: get-repo-values
               name: Get repository values
               run: |
@@ -43,7 +46,7 @@ jobs:
               with:
                   file: package.json
                   field: homepage
-                  value: ${{ steps.get-repo-values.outputs.url }}
+                  value: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
             # create_redirects
             - name: Create Redirects and Links
               id: create_redirects
@@ -61,13 +64,7 @@ jobs:
                   <meta http-equiv='refresh' content='0; URL=docs/quick-links' />\
                   </head><body>Redirecting to quick links page</body></html>" > ./dist/quick.html
             # Install node packages
-            - name: Install
-              id: install
-              run: |
-                  echo "<html><body><pre>" > ./dist/installation.html
-                  npm install |& tee -a ./dist/installation.html
-                  echo "</pre></body></html>" >> ./dist/installation.html
-                  echo "* [Installation](../installation.html)" >> docs/quick-links.md
+            - run: npm ci
             # Run linter
             - name: Run Linter
               id: lint
@@ -75,14 +72,7 @@ jobs:
                   npm run eslint-output
                   echo "* [Linter](../lint.html)" >> docs/quick-links.md
             # Build the project
-            - name: Build the project
-              id: build
-              run: |
-                  echo "<html><body><pre>" > ./dist/build.html
-                  npm run build |& tee -a ./dist/build.html
-                  mv ./build/* ./dist
-                  echo "</pre></body></html>" >> ./dist/build.html
-                  echo "* [Build](../build.html)" >> docs/quick-links.md
+            - run: npm run build
             # Run Tests
             - name: Run Tests
               id: test
@@ -140,7 +130,7 @@ jobs:
               uses: actions/upload-pages-artifact@v4
               if: ${{ !cancelled() }}
               with:
-                  path: "dist/"
+                  path: './build'
             - name: Deploy to GitHub Pages
               id: deployment
               uses: actions/deploy-pages@v2
